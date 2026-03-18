@@ -1,0 +1,100 @@
+---
+title: "Futbol"
+author: "Pascal Jorratt"
+date: "2025-12-25"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(rvest)
+library(dplyr)
+library(tidyverse)
+library(gganimate)
+library(magick)
+
+data <- read.csv("~/Documentos/Proyectos R/Futbol/campeonatos_chile.csv")
+head(data)
+```
+
+```{r cars}
+library(tidyverse)
+library(gganimate)
+library(tidyr)
+library(forcats)
+
+df <- data %>%
+  count(Año, Campeon, name = "wins") %>%
+  arrange(Año)
+
+teams <- sort(unique(df$Campeon))
+years <- sort(unique(df$Año))
+
+df_expanded <- expand_grid(Año = years, Campeon = teams) %>%
+  left_join(df, by = c("Año", "Campeon")) %>%
+  mutate(wins = replace_na(wins, 0L)) %>%
+  group_by(Campeon) %>%
+  arrange(Año, .by_group = TRUE) %>%
+  mutate(cum_wins = cumsum(wins)) %>%
+  ungroup()
+
+year_champion <- df %>%
+  filter(wins > 0) %>%
+  arrange(Año, Campeon) %>%
+  group_by(Año) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  select(Año, year_champion = Campeon)
+
+champ_map <- year_champion$year_champion
+names(champ_map) <- as.character(year_champion$Año)
+
+df_plot <- df_expanded %>%
+  left_join(year_champion, by = "Año") %>%
+  group_by(Año) %>%
+  mutate(Campeon = fct_reorder(Campeon, cum_wins, .desc = TRUE)) %>%
+  arrange(Año, desc(cum_wins), Campeon) %>%
+  mutate(rank = row_number(),
+         rank_rev = max(rank) + 1 - rank,
+         team_label = as.character(Campeon)) %>%
+  ungroup()
+
+p <- ggplot(df_plot, aes(x = rank_rev, y = cum_wins, fill = Campeon, group = Campeon)) +
+  geom_col(width = 0.8, show.legend = FALSE) +
+  geom_text(aes(label = format(cum_wins, nsmall = 0, trim = TRUE)), hjust = -0.1, color = "black", size = 8) + 
+  geom_text(aes(y = 0, label = team_label), hjust = 1, nudge_y = -0.25, size = 8, color = "black") +
+  scale_x_continuous(breaks = NULL) +
+  coord_flip(clip = "off", expand = TRUE) +
+  labs(
+    title = "Campeones de Primera División\n Año: {closest_state} - Campeón: {champ_map[as.character(closest_state)]}",
+    y = NULL, x = NULL) +
+  theme_minimal(base_size = 21) +
+  scale_y_continuous(breaks = NULL, labels = NULL) +
+  theme(
+    plot.title = element_text(size = 30, face = "bold", lineheight = 0.9, hjust = 0),
+    axis.text = element_text(size = 21),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.margin = margin(t = 60, r = 40, b = 5, l = 160),  # increase t to push title down
+    plot.title.position = "plot",
+    panel.background = element_rect(fill = "#f5f0e6", colour = NA),
+    plot.background  = element_rect(fill = "#f5f0e6", colour = NA)
+  )
+
+
+anim <- p +
+  transition_states(Año, transition_length = 2, state_length = 1, wrap = FALSE) +
+  ease_aes("sine-in-out")
+
+anim_out <- animate(anim,
+                    nframes = 600,
+                    fps = 10,
+                    width = 1600,
+                    height = 1200,
+                    renderer = magick_renderer())
+
+
+anim_out
+```
+
