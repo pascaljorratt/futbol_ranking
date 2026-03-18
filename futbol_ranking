@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Proyectos en R</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Opcional: para un CSS */
+</head>
+<body>
+    <h1>Mis Proyectos en R</h1>
+    <h2>Proyectos Recientes</h2>
+    <ul>
+        <li>
+            <h3>Proyecto 1</h3>
+            <p>Descripción del proyecto.</p>
+            <img src="nombre_del_gif.gif" alt="Descripción del GIF">
+        </li>
+        <!-- Repite según sea necesario -->
+    </ul>
+</body>
+</html>
